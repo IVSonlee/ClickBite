@@ -1,14 +1,15 @@
 import javax.swing.*;
 import java.awt.*;
-import java.awt.event.ActionEvent;
 import java.util.HashMap;
 import java.util.Map;
+import java.awt.event.*;
 
 public class ClickBiteGUI extends JFrame {
     // Store user data
     private Map<String, Map<String, String>> usersDatabase = new HashMap<>();
     private Map<String, String> currentUser = null;
     private JComboBox<String> accountDropdown; // Declare at class level
+    private OrderNow orderWindow = null;
 
     public ClickBiteGUI() {
         // Set up JFrame
@@ -27,7 +28,7 @@ public class ClickBiteGUI extends JFrame {
         // -------------------- Logo and Brand Name ------------------------
         JPanel logoPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 15, 10));
         logoPanel.setOpaque(false);
-        ImageIcon logoIcon = new ImageIcon("ClickBite_Images/ClickBite_logo.png");
+        ImageIcon logoIcon = new ImageIcon("ClickBite/ClickBite_Images/ClickBite_logo.png");
         JLabel logoLabel = (logoIcon.getIconWidth() > 0)
                 ? new JLabel(new ImageIcon(logoIcon.getImage().getScaledInstance(80, 80, Image.SCALE_SMOOTH)))
                 : new JLabel("🍔", JLabel.LEFT);
@@ -70,7 +71,7 @@ public class ClickBiteGUI extends JFrame {
         centerPanel.setPreferredSize(new Dimension(getWidth(), 430));
         centerPanel.setBorder(BorderFactory.createEmptyBorder(0, 0, 0, 0));
 
-        ImageIcon bannerIcon = new ImageIcon("ClickBite_Images/ClickBite_Banner.png");
+        ImageIcon bannerIcon = new ImageIcon("ClickBite/ClickBite_Images/ClickBite_Banner.png");
         JLabel bannerLabel = (bannerIcon.getIconWidth() > 0)
                 ? new JLabel(new ImageIcon(bannerIcon.getImage().getScaledInstance(1400, 430, Image.SCALE_SMOOTH)))
                 : new JLabel("Welcome to ClickBite!", JLabel.CENTER);
@@ -88,6 +89,20 @@ public class ClickBiteGUI extends JFrame {
         centerPanel.add(Box.createVerticalStrut(20));
         centerPanel.add(orderNowButton);
         centerPanel.add(Box.createVerticalStrut(20));
+
+        orderNowButton.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                // Check if the order window is already visible
+                if (orderWindow == null || !orderWindow.isVisible()) {
+                    orderWindow = new OrderNow(); // Create new window if not visible
+                    orderWindow.setVisible(true);
+                    setVisible(false);  // Hide the ClickBite main window
+                } else {
+                    // Optionally, bring the window to front if already visible
+                    orderWindow.toFront();
+                }
+            }
+        });
 
         // ------------------------ Footer Panel ------------------------
         JPanel footerPanel = new JPanel(new GridLayout(1, 4));
