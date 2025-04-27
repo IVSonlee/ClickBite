@@ -1,3 +1,4 @@
+import java.sql.*;
 import javax.swing.*;
 import java.awt.*;
 import java.util.HashMap;
@@ -13,6 +14,7 @@ public class ClickBiteGUI extends JFrame {
 
     public ClickBiteGUI() {
         // Set up JFrame
+        DatabaseManager.initializeDatabase();
         setTitle("ClickBite");
         setSize(1000, 700);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -31,7 +33,7 @@ public class ClickBiteGUI extends JFrame {
         ImageIcon logoIcon = new ImageIcon("ClickBite/ClickBite_Images/ClickBite_logo.png");
         JLabel logoLabel = (logoIcon.getIconWidth() > 0)
                 ? new JLabel(new ImageIcon(logoIcon.getImage().getScaledInstance(80, 80, Image.SCALE_SMOOTH)))
-                : new JLabel("🍔", JLabel.LEFT);
+                : new JLabel("\uD83C\uDF54", JLabel.LEFT);
         JLabel brandNameLabel = new JLabel("ClickBite");
         brandNameLabel.setFont(new Font("Arial", Font.BOLD, 28));
         brandNameLabel.setForeground(new Color(255, 56, 56));
@@ -96,7 +98,7 @@ public class ClickBiteGUI extends JFrame {
                 if (orderWindow == null || !orderWindow.isVisible()) {
                     orderWindow = new OrderNow(); // Create new window if not visible
                     orderWindow.setVisible(true);
-                    setVisible(false);  // Hide the ClickBite main window
+                    setVisible(false); // Hide the ClickBite main window
                 } else {
                     // Optionally, bring the window to front if already visible
                     orderWindow.toFront();
@@ -128,11 +130,13 @@ public class ClickBiteGUI extends JFrame {
                 if (currentUser != null) {
                     showProfilePopup();
                 } else {
-                    JOptionPane.showMessageDialog(this, "Please sign in first", "Profile", JOptionPane.INFORMATION_MESSAGE);
+                    JOptionPane.showMessageDialog(this, "Please sign in first", "Profile",
+                            JOptionPane.INFORMATION_MESSAGE);
                 }
             } else if (selected.equals("Log Out")) {
                 currentUser = null;
-                JOptionPane.showMessageDialog(this, "Logged out successfully", "Log Out", JOptionPane.INFORMATION_MESSAGE);
+                JOptionPane.showMessageDialog(this, "Logged out successfully", "Log Out",
+                        JOptionPane.INFORMATION_MESSAGE);
             }
             // Reset the dropdown to avoid staying on the selected option
             accountDropdown.setSelectedIndex(0);
@@ -186,18 +190,18 @@ public class ClickBiteGUI extends JFrame {
         panel.add(new JLabel());
 
         int result = JOptionPane.showConfirmDialog(this, panel, "Customer Sign Up", JOptionPane.OK_CANCEL_OPTION);
-        
+
         if (result == JOptionPane.OK_OPTION) {
             if (!new String(passwordField.getPassword()).equals(new String(confirmPasswordField.getPassword()))) {
                 JOptionPane.showMessageDialog(this, "Passwords don't match", "Error", JOptionPane.ERROR_MESSAGE);
                 return;
             }
-            
+
             if (!termsCheck.isSelected()) {
                 JOptionPane.showMessageDialog(this, "You must agree to the terms", "Error", JOptionPane.ERROR_MESSAGE);
                 return;
             }
-            
+
             Map<String, String> userData = new HashMap<>();
             userData.put("fullName", fullNameField.getText());
             userData.put("email", emailField.getText());
@@ -206,10 +210,10 @@ public class ClickBiteGUI extends JFrame {
             userData.put("city", cityField.getText());
             userData.put("postal", postalField.getText());
             userData.put("password", new String(passwordField.getPassword()));
-            
-            usersDatabase.put(emailField.getText(), userData);
+
+            saveUserToDatabase(userData);
             currentUser = userData;
-            
+
             JOptionPane.showMessageDialog(this, "Sign up successful!", "Success", JOptionPane.INFORMATION_MESSAGE);
         }
     }
@@ -219,7 +223,7 @@ public class ClickBiteGUI extends JFrame {
         JTextField emailField = new JTextField();
         JPasswordField passwordField = new JPasswordField();
         JCheckBox rememberMe = new JCheckBox("Remember Me");
-        
+
         panel.add(new JLabel("Email:"));
         panel.add(emailField);
         panel.add(new JLabel("Password:"));
@@ -230,16 +234,17 @@ public class ClickBiteGUI extends JFrame {
         panel.add(new JLabel());
 
         int result = JOptionPane.showConfirmDialog(this, panel, "Customer Sign In", JOptionPane.OK_CANCEL_OPTION);
-        
+
         if (result == JOptionPane.OK_OPTION) {
             String email = emailField.getText();
             String password = new String(passwordField.getPassword());
-            
+
             if (usersDatabase.containsKey(email)) {
                 Map<String, String> user = usersDatabase.get(email);
                 if (user.get("password").equals(password)) {
                     currentUser = user;
-                    JOptionPane.showMessageDialog(this, "Sign in successful!", "Success", JOptionPane.INFORMATION_MESSAGE);
+                    JOptionPane.showMessageDialog(this, "Sign in successful!", "Success",
+                            JOptionPane.INFORMATION_MESSAGE);
                 } else {
                     JOptionPane.showMessageDialog(this, "Incorrect password", "Error", JOptionPane.ERROR_MESSAGE);
                 }
@@ -279,82 +284,84 @@ public class ClickBiteGUI extends JFrame {
     }
 
     private void showProfilePopup() {
-        if (currentUser == null) return;
-        
+        if (currentUser == null)
+            return;
+
         JPanel profilePanel = new JPanel(new GridBagLayout());
         profilePanel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.anchor = GridBagConstraints.WEST;
         gbc.insets = new Insets(5, 5, 5, 5);
-        
+
         JLabel profilePicLabel;
         ImageIcon profileIcon = new ImageIcon("ClickBite_Images/profile_pic.png");
         if (profileIcon.getIconWidth() > 0) {
-            profilePicLabel = new JLabel(new ImageIcon(profileIcon.getImage().getScaledInstance(100, 100, Image.SCALE_SMOOTH)));
+            profilePicLabel = new JLabel(
+                    new ImageIcon(profileIcon.getImage().getScaledInstance(100, 100, Image.SCALE_SMOOTH)));
         } else {
             profilePicLabel = new JLabel("👤", JLabel.CENTER);
             profilePicLabel.setFont(new Font("Arial", Font.PLAIN, 50));
         }
-        
+
         gbc.gridx = 0;
         gbc.gridy = 0;
         gbc.gridheight = 4;
         gbc.fill = GridBagConstraints.VERTICAL;
         profilePanel.add(profilePicLabel, gbc);
-        
+
         gbc.gridheight = 1;
         gbc.fill = GridBagConstraints.HORIZONTAL;
-        
+
         gbc.gridx = 1;
         gbc.gridy = 0;
         gbc.gridwidth = 2;
         JLabel personalInfoLabel = new JLabel("Personal Information");
         personalInfoLabel.setFont(new Font("Arial", Font.BOLD, 16));
         profilePanel.add(personalInfoLabel, gbc);
-        
+
         gbc.gridy = 1;
         gbc.gridwidth = 1;
         profilePanel.add(new JLabel("Name:"), gbc);
         gbc.gridx = 2;
         profilePanel.add(new JLabel(currentUser.get("fullName")), gbc);
-        
+
         gbc.gridx = 1;
         gbc.gridy = 2;
         profilePanel.add(new JLabel("Email:"), gbc);
         gbc.gridx = 2;
         profilePanel.add(new JLabel(currentUser.get("email")), gbc);
-        
+
         gbc.gridx = 1;
         gbc.gridy = 3;
         profilePanel.add(new JLabel("Username:"), gbc);
         gbc.gridx = 2;
         profilePanel.add(new JLabel(currentUser.get("username")), gbc);
-        
+
         gbc.gridx = 1;
         gbc.gridy = 4;
         gbc.gridwidth = 2;
         JLabel addressLabel = new JLabel("Address");
         addressLabel.setFont(new Font("Arial", Font.BOLD, 16));
         profilePanel.add(addressLabel, gbc);
-        
+
         gbc.gridy = 5;
         gbc.gridwidth = 1;
         profilePanel.add(new JLabel("Street:"), gbc);
         gbc.gridx = 2;
         profilePanel.add(new JLabel(currentUser.get("street")), gbc);
-        
+
         gbc.gridx = 1;
         gbc.gridy = 6;
         profilePanel.add(new JLabel("City:"), gbc);
         gbc.gridx = 2;
         profilePanel.add(new JLabel(currentUser.get("city")), gbc);
-        
+
         gbc.gridx = 1;
         gbc.gridy = 7;
         profilePanel.add(new JLabel("Postal Code:"), gbc);
         gbc.gridx = 2;
         profilePanel.add(new JLabel(currentUser.get("postal")), gbc);
-        
+
         gbc.gridx = 1;
         gbc.gridy = 8;
         gbc.gridwidth = 2;
@@ -366,7 +373,7 @@ public class ClickBiteGUI extends JFrame {
         editButton.setFocusPainted(false);
         editButton.addActionListener(e -> showEditProfileForm());
         profilePanel.add(editButton, gbc);
-        
+
         JDialog profileDialog = new JDialog(this, "My Profile", true);
         profileDialog.setContentPane(profilePanel);
         profileDialog.pack();
@@ -375,10 +382,11 @@ public class ClickBiteGUI extends JFrame {
     }
 
     private void showEditProfileForm() {
-        if (currentUser == null) return;
-        
+        if (currentUser == null)
+            return;
+
         JPanel panel = new JPanel(new GridLayout(8, 2));
-        
+
         JTextField fullNameField = new JTextField(currentUser.get("fullName"));
         JTextField emailField = new JTextField(currentUser.get("email"));
         JTextField usernameField = new JTextField(currentUser.get("username"));
@@ -387,7 +395,7 @@ public class ClickBiteGUI extends JFrame {
         JTextField postalField = new JTextField(currentUser.get("postal"));
         JPasswordField passwordField = new JPasswordField();
         passwordField.setText(currentUser.get("password"));
-        
+
         panel.add(new JLabel("Full name:"));
         panel.add(fullNameField);
         panel.add(new JLabel("Email Address:"));
@@ -402,9 +410,9 @@ public class ClickBiteGUI extends JFrame {
         panel.add(postalField);
         panel.add(new JLabel("Password:"));
         panel.add(passwordField);
-        
+
         int result = JOptionPane.showConfirmDialog(this, panel, "Edit Profile", JOptionPane.OK_CANCEL_OPTION);
-        
+
         if (result == JOptionPane.OK_OPTION) {
             currentUser.put("fullName", fullNameField.getText());
             currentUser.put("email", emailField.getText());
@@ -413,13 +421,14 @@ public class ClickBiteGUI extends JFrame {
             currentUser.put("city", cityField.getText());
             currentUser.put("postal", postalField.getText());
             currentUser.put("password", new String(passwordField.getPassword()));
-            
+
             if (!emailField.getText().equals(currentUser.get("email"))) {
                 usersDatabase.remove(currentUser.get("email"));
                 usersDatabase.put(emailField.getText(), currentUser);
             }
-            
-            JOptionPane.showMessageDialog(this, "Profile updated successfully!", "Success", JOptionPane.INFORMATION_MESSAGE);
+
+            JOptionPane.showMessageDialog(this, "Profile updated successfully!", "Success",
+                    JOptionPane.INFORMATION_MESSAGE);
         }
     }
 
@@ -436,4 +445,21 @@ public class ClickBiteGUI extends JFrame {
     public static void main(String[] args) {
         SwingUtilities.invokeLater(ClickBiteGUI::new);
     }
+
+    private void saveUserToDatabase(Map<String, String> userData) {
+        String sql = "INSERT INTO users (email, fullName, username, street, city, postal, password) VALUES (?, ?, ?, ?, ?, ?, ?)";
+        try (Connection conn = DatabaseManager.getConnection(); PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setString(1, userData.get("email"));
+            pstmt.setString(2, userData.get("fullName"));
+            pstmt.setString(3, userData.get("username"));
+            pstmt.setString(4, userData.get("street"));
+            pstmt.setString(5, userData.get("city"));
+            pstmt.setString(6, userData.get("postal"));
+            pstmt.setString(7, userData.get("password"));
+            pstmt.executeUpdate();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+
 }
