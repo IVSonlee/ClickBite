@@ -44,7 +44,7 @@ public class ClickBiteGUI extends JFrame {
         // -------------------- Navigation ------------------------
         JPanel navPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 25, 35));
         navPanel.setOpaque(false);
-        String[] navItems = { "Menu", "Order Now", "Contact Us", "About Us" };
+        String[] navItems = { "My Cart", "Order Now", "Contact Us", "About Us" };
         for (String item : navItems) {
             JLabel navLabel = new JLabel(item);
             navLabel.setFont(new Font("Arial", Font.PLAIN, 18));
