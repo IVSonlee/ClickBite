@@ -7,7 +7,6 @@ import java.awt.event.*;
 
 public class ClickBiteGUI extends JFrame {
     // Store user data
-    private Map<String, Map<String, String>> usersDatabase = new HashMap<>();
     private Map<String, String> currentUser = null;
     private JComboBox<String> accountDropdown; // Declare at class level
     private OrderNow orderWindow = null;
@@ -236,20 +235,41 @@ public class ClickBiteGUI extends JFrame {
         int result = JOptionPane.showConfirmDialog(this, panel, "Customer Sign In", JOptionPane.OK_CANCEL_OPTION);
 
         if (result == JOptionPane.OK_OPTION) {
-            String email = emailField.getText();
+            String email = emailField.getText().trim();
             String password = new String(passwordField.getPassword());
 
-            if (usersDatabase.containsKey(email)) {
-                Map<String, String> user = usersDatabase.get(email);
-                if (user.get("password").equals(password)) {
-                    currentUser = user;
-                    JOptionPane.showMessageDialog(this, "Sign in successful!", "Success",
-                            JOptionPane.INFORMATION_MESSAGE);
+            String sql = "SELECT * FROM users WHERE email = ?";
+            try (Connection conn = DatabaseManager.getConnection();
+                    PreparedStatement pstmt = conn.prepareStatement(sql)) {
+
+                pstmt.setString(1, email);
+                ResultSet rs = pstmt.executeQuery();
+
+                if (rs.next()) {
+                    String storedPassword = rs.getString("password");
+                    if (storedPassword.equals(password)) {
+                        // Load user data from database
+                        currentUser = new HashMap<>();
+                        currentUser.put("email", rs.getString("email"));
+                        currentUser.put("fullName", rs.getString("fullName"));
+                        currentUser.put("username", rs.getString("username"));
+                        currentUser.put("street", rs.getString("street"));
+                        currentUser.put("city", rs.getString("city"));
+                        currentUser.put("postal", rs.getString("postal"));
+                        currentUser.put("password", storedPassword);
+
+                        JOptionPane.showMessageDialog(this, "Sign in successful!", "Success",
+                                JOptionPane.INFORMATION_MESSAGE);
+                    } else {
+                        JOptionPane.showMessageDialog(this, "Incorrect password", "Error", JOptionPane.ERROR_MESSAGE);
+                    }
                 } else {
-                    JOptionPane.showMessageDialog(this, "Incorrect password", "Error", JOptionPane.ERROR_MESSAGE);
+                    JOptionPane.showMessageDialog(this, "User not found", "Error", JOptionPane.ERROR_MESSAGE);
                 }
-            } else {
-                JOptionPane.showMessageDialog(this, "User not found", "Error", JOptionPane.ERROR_MESSAGE);
+            } catch (SQLException ex) {
+                JOptionPane.showMessageDialog(this, "Database error: " + ex.getMessage(),
+                        "Error", JOptionPane.ERROR_MESSAGE);
+                ex.printStackTrace();
             }
         }
     }
@@ -386,49 +406,49 @@ public class ClickBiteGUI extends JFrame {
             return;
 
         JPanel panel = new JPanel(new GridLayout(8, 2));
-
-        JTextField fullNameField = new JTextField(currentUser.get("fullName"));
-        JTextField emailField = new JTextField(currentUser.get("email"));
-        JTextField usernameField = new JTextField(currentUser.get("username"));
-        JTextField streetField = new JTextField(currentUser.get("street"));
-        JTextField cityField = new JTextField(currentUser.get("city"));
-        JTextField postalField = new JTextField(currentUser.get("postal"));
+        JTextField fullNameField = new JTextField();
+        JTextField emailField = new JTextField();
+        JTextField usernameField = new JTextField();
+        JTextField streetField = new JTextField();
+        JTextField cityField = new JTextField();
+        JTextField postalField = new JTextField();
         JPasswordField passwordField = new JPasswordField();
-        passwordField.setText(currentUser.get("password"));
-
-        panel.add(new JLabel("Full name:"));
-        panel.add(fullNameField);
-        panel.add(new JLabel("Email Address:"));
-        panel.add(emailField);
-        panel.add(new JLabel("Username:"));
-        panel.add(usernameField);
-        panel.add(new JLabel("Street Address:"));
-        panel.add(streetField);
-        panel.add(new JLabel("City:"));
-        panel.add(cityField);
-        panel.add(new JLabel("Postal/ZIP Code:"));
-        panel.add(postalField);
-        panel.add(new JLabel("Password:"));
-        panel.add(passwordField);
 
         int result = JOptionPane.showConfirmDialog(this, panel, "Edit Profile", JOptionPane.OK_CANCEL_OPTION);
 
         if (result == JOptionPane.OK_OPTION) {
-            currentUser.put("fullName", fullNameField.getText());
-            currentUser.put("email", emailField.getText());
-            currentUser.put("username", usernameField.getText());
-            currentUser.put("street", streetField.getText());
-            currentUser.put("city", cityField.getText());
-            currentUser.put("postal", postalField.getText());
-            currentUser.put("password", new String(passwordField.getPassword()));
+            String oldEmail = currentUser.get("email");
+            String newEmail = emailField.getText();
 
-            if (!emailField.getText().equals(currentUser.get("email"))) {
-                usersDatabase.remove(currentUser.get("email"));
-                usersDatabase.put(emailField.getText(), currentUser);
+            String sql = "UPDATE users SET email=?, fullName=?, username=?, street=?, city=?, postal=?, password=? WHERE email=?";
+            try (Connection conn = DatabaseManager.getConnection();
+                    PreparedStatement pstmt = conn.prepareStatement(sql)) {
+
+                pstmt.setString(1, newEmail);
+                pstmt.setString(2, fullNameField.getText());
+                pstmt.setString(3, usernameField.getText());
+                pstmt.setString(4, streetField.getText());
+                pstmt.setString(5, cityField.getText());
+                pstmt.setString(6, postalField.getText());
+                pstmt.setString(7, new String(passwordField.getPassword()));
+                pstmt.setString(8, oldEmail);
+                pstmt.executeUpdate();
+
+                currentUser.put("fullName", fullNameField.getText());
+                currentUser.put("email", newEmail);
+                currentUser.put("username", usernameField.getText());
+                currentUser.put("street", streetField.getText());
+                currentUser.put("city", cityField.getText());
+                currentUser.put("postal", postalField.getText());
+                currentUser.put("password", new String(passwordField.getPassword()));
+
+                JOptionPane.showMessageDialog(this, "Profile updated successfully!", "Success",
+                        JOptionPane.INFORMATION_MESSAGE);
+            } catch (SQLException ex) {
+                JOptionPane.showMessageDialog(this, "Database error during update: " + ex.getMessage(),
+                        "Error", JOptionPane.ERROR_MESSAGE);
+                ex.printStackTrace();
             }
-
-            JOptionPane.showMessageDialog(this, "Profile updated successfully!", "Success",
-                    JOptionPane.INFORMATION_MESSAGE);
         }
     }
 
