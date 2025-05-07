@@ -7,6 +7,7 @@ import java.util.List;
 public class OrderNow extends JFrame {
     private JPanel categoryPanel, foodPanel, cartPanel, headerPanel;
     private JLabel totalLabel;
+    private JPanel cartListPanel;
     private double totalAmount = 0.0;
     private Map<String, List<MenuItem>> foodItemsMap;
     private Map<String, List<CartItem>> cartItemsByCategory;
@@ -17,14 +18,14 @@ public class OrderNow extends JFrame {
         foodItemsMap = new HashMap<>();
         cartItemsByCategory = new HashMap<>();
 
-        // Sample data
+        // Sample data (unchanged, trimmed for brevity in this snippet)
         foodItemsMap.put("Best Sellers", Arrays.asList(
-                new MenuItem("2pc Chickenjoy", 169, "ClickBite/ClickBite_Images/Best_Sellers/Menu1.png"),
-                new MenuItem("6pc Chickenjoy with Palabok Family Plan", 927, "ClickBite/ClickBite_Images/Best_Sellers/Menu2.png"),
-                new MenuItem("Big Mac", 100, "ClickBite/ClickBite_Images/Best_Sellers/Menu3.png"),
-                new MenuItem("Cheesy Yumburger", 72, "ClickBite/ClickBite_Images/Best_Sellers/Menu4.png"),
-                new MenuItem("Sausage Burrito", 80, "ClickBite/ClickBite_Images/Best_Sellers/Menu5.png"),
-                new MenuItem("Spicy McCrispy", 90, "ClickBite/ClickBite_Images/Best_Sellers/Menu6.png")
+            new MenuItem("2pc Chickenjoy", 169, "ClickBite/ClickBite_Images/Best_Sellers/Menu1.png"),
+            new MenuItem("6pc Chickenjoy with Palabok Family Plan", 927, "ClickBite/ClickBite_Images/Best_Sellers/Menu2.png"),
+            new MenuItem("Big Mac", 100, "ClickBite/ClickBite_Images/Best_Sellers/Menu3.png"),
+            new MenuItem("Cheesy Yumburger", 72, "ClickBite/ClickBite_Images/Best_Sellers/Menu4.png"),
+            new MenuItem("Sausage Burrito", 80, "ClickBite/ClickBite_Images/Best_Sellers/Menu5.png"),
+            new MenuItem("Spicy McCrispy", 90, "ClickBite/ClickBite_Images/Best_Sellers/Menu6.png")
         ));
         foodItemsMap.put("Breakfast", Arrays.asList(
                 new MenuItem("1pc Breakfast Chickenjoy", 151, "ClickBite/ClickBite_Images/Breakfast/Menu1.png"),
@@ -67,7 +68,9 @@ public class OrderNow extends JFrame {
                 new MenuItem("Tangy Barbeque Sauce", 10, "ClickBite/ClickBite_Images/FriesSide_Dishes/Menu6.jpg")
         ));
 
-        // Layout
+        // Repeat for other categories (Breakfast, Burgers, etc.)
+        // ...
+
         setSize(1200, 700);
         setLayout(new BorderLayout());
 
@@ -120,12 +123,13 @@ public class OrderNow extends JFrame {
         cartPanel.setPreferredSize(new Dimension(350, 600));
         cartPanel.setLayout(new BorderLayout());
 
-        Panel cartListPanel = new Panel();
+        cartListPanel = new JPanel();
         cartListPanel.setLayout(new BoxLayout(cartListPanel, BoxLayout.Y_AXIS));
 
         totalLabel = new JLabel("Total: ₱0.00");
         totalLabel.setFont(new Font("Arial", Font.BOLD, 16));
-        cartPanel.add(new Label("Your Order:"), BorderLayout.NORTH);
+
+        cartPanel.add(new JLabel("Your Order:"), BorderLayout.NORTH);
         cartPanel.add(new JScrollPane(cartListPanel), BorderLayout.CENTER);
         cartPanel.add(totalLabel, BorderLayout.SOUTH);
     }
@@ -138,46 +142,44 @@ public class OrderNow extends JFrame {
     private void showFoodItems(String category) {
         foodPanel.removeAll();
         List<MenuItem> items = foodItemsMap.getOrDefault(category, new ArrayList<>());
-    
+
         for (MenuItem item : items) {
             Panel itemPanel = new Panel(new BorderLayout());
             itemPanel.setBackground(Color.LIGHT_GRAY);
             itemPanel.setPreferredSize(new Dimension(250, 200));
-    
-            // Load and scale image
+
             ImageIcon icon = new ImageIcon(item.image);
             Image img = icon.getImage().getScaledInstance(150, 150, Image.SCALE_SMOOTH);
             JLabel imageLabel = new JLabel(new ImageIcon(img));
             imageLabel.setHorizontalAlignment(SwingConstants.CENTER);
-    
+
             Label name = new Label(item.name + " - ₱" + item.price);
             name.setFont(new Font("Arial", Font.BOLD, 14));
             name.setAlignment(Label.CENTER);
-    
+
             Choice qtyChoice = new Choice();
             for (int i = 1; i <= 10; i++) qtyChoice.add(String.valueOf(i));
-    
+
             Button addBtn = new Button("Add to Order");
             addBtn.addActionListener(e -> {
                 int qty = Integer.parseInt(qtyChoice.getSelectedItem());
                 addToCart(category, item, qty);
             });
-    
+
             Panel bottom = new Panel(new FlowLayout());
             bottom.add(qtyChoice);
             bottom.add(addBtn);
-    
+
             itemPanel.add(imageLabel, BorderLayout.NORTH);
             itemPanel.add(name, BorderLayout.CENTER);
             itemPanel.add(bottom, BorderLayout.SOUTH);
-    
+
             foodPanel.add(itemPanel);
         }
-    
+
         foodPanel.revalidate();
         foodPanel.repaint();
     }
-    
 
     private void addToCart(String category, MenuItem item, int quantity) {
         cartItemsByCategory.putIfAbsent(category, new ArrayList<>());
@@ -186,68 +188,61 @@ public class OrderNow extends JFrame {
         for (CartItem cartItem : cartList) {
             if (cartItem.name.equals(item.name)) {
                 cartItem.quantity += quantity;
-                updateTotal();
+                updateCartDisplay();
                 return;
             }
         }
 
         cartList.add(new CartItem(item.name, item.price, quantity));
-        updateTotal();
+        updateCartDisplay();
     }
 
-    private void updateTotal() {
-        totalAmount = 0;
-        cartPanel.removeAll();
-
-        Panel cartListPanel = new Panel();
-        cartListPanel.setLayout(new BoxLayout(cartListPanel, BoxLayout.Y_AXIS));
+    private void updateCartDisplay() {
+        cartListPanel.removeAll();
+        totalAmount = 0.0;
 
         for (String category : cartItemsByCategory.keySet()) {
-            cartListPanel.add(new Label("Category: " + category));
+            JLabel catLabel = new JLabel(category);
+            catLabel.setFont(new Font("Arial", Font.BOLD, 14));
+            cartListPanel.add(catLabel);
+
             for (CartItem item : cartItemsByCategory.get(category)) {
-                Label itemLabel = new Label(item.name + " x" + item.quantity + " = ₱" + (item.price * item.quantity));
+                JLabel itemLabel = new JLabel(item.name + " x" + item.quantity + " - ₱" + (item.price * item.quantity));
                 cartListPanel.add(itemLabel);
                 totalAmount += item.price * item.quantity;
             }
         }
 
-        totalLabel = new JLabel("Total: ₱" + totalAmount);
-        totalLabel.setFont(new Font("Arial", Font.BOLD, 16));
-
-        cartPanel.add(new Label("Your Order:"), BorderLayout.NORTH);
-        cartPanel.add(new JScrollPane(cartListPanel), BorderLayout.CENTER);
-        cartPanel.add(totalLabel, BorderLayout.SOUTH);
-
-        cartPanel.revalidate();
-        cartPanel.repaint();
+        totalLabel.setText("Total: ₱" + String.format("%.2f", totalAmount));
+        cartListPanel.revalidate();
+        cartListPanel.repaint();
     }
 
     public static void main(String[] args) {
         new OrderNow();
     }
+}
 
-    // Inner classes
-    class MenuItem {
-        String name;
-        double price;
-        String image;
+class MenuItem {
+    String name;
+    double price;
+    String image;
 
-        MenuItem(String name, double price, String image) {
-            this.name = name;
-            this.price = price;
-            this.image = image;
-        }
+    MenuItem(String name, double price, String image) {
+        this.name = name;
+        this.price = price;
+        this.image = image;
     }
+}
 
-    class CartItem {
-        String name;
-        double price;
-        int quantity;
+class CartItem {
+    String name;
+    double price;
+    int quantity;
 
-        CartItem(String name, double price, int quantity) {
-            this.name = name;
-            this.price = price;
-            this.quantity = quantity;
-        }
+    CartItem(String name, double price, int quantity) {
+        this.name = name;
+        this.price = price;
+        this.quantity = quantity;
     }
 }

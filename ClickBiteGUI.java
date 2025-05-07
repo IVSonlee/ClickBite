@@ -5,13 +5,15 @@ import java.util.HashMap;
 import java.util.Map;
 import java.awt.event.*;
 
+
 public class ClickBiteGUI extends JFrame {
     // Store user data
     private Map<String, String> currentUser = null;
     private JComboBox<String> accountDropdown; // Declare at class level
     private OrderNow orderWindow = null;
 
-    public ClickBiteGUI() {
+    public ClickBiteGUI() 
+    {
         // Set up JFrame
         DatabaseManager.initializeDatabase();
         setTitle("ClickBite");
@@ -43,14 +45,36 @@ public class ClickBiteGUI extends JFrame {
         // -------------------- Navigation ------------------------
         JPanel navPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 25, 35));
         navPanel.setOpaque(false);
+
         String[] navItems = { "My Cart", "Order Now", "Contact Us", "About Us" };
+
         for (String item : navItems) {
-            JLabel navLabel = new JLabel(item);
-            navLabel.setFont(new Font("Arial", Font.PLAIN, 18));
-            navLabel.setForeground(new Color(255, 56, 56));
-            navPanel.add(navLabel);
+            JButton navButton = new JButton(item);
+            String itemCopy = item; // capture the current value
+        
+            navButton.addActionListener(e -> {
+                switch (itemCopy) {
+                    case "Contact Us":
+                        new ContactUsPage(orderWindow); // Ensure this is a JFrame or JDialog subclass
+                        break;
+                    case "My Cart":
+                        System.out.println("My Cart clicked");
+                        break;
+                    case "Order Now":
+                        new OrderNow();
+                        break;
+                    case "About Us":
+                        System.out.println("About Us clicked");
+                        break;
+                }
+            });
+        
+            navPanel.add(navButton);
         }
+        
+
         headerPanel.add(navPanel, BorderLayout.CENTER);
+
 
         // -------------------- Account Dropdown ------------------------
         JPanel accountPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 15, 30));
@@ -143,6 +167,7 @@ public class ClickBiteGUI extends JFrame {
 
         setVisible(true);
     }
+    
 
     private void showSignUpSignInOptions() {
         String[] options = { "Customer Sign Up", "Customer Sign In", "Admin Sign Up", "Admin Sign In" };
@@ -156,6 +181,7 @@ public class ClickBiteGUI extends JFrame {
             case 3 -> showAdminSignInForm();
         }
     }
+    
 
     private void showCustomerSignUpForm() {
         JPanel panel = new JPanel(new GridLayout(10, 2));
