@@ -5,15 +5,13 @@ import java.util.HashMap;
 import java.util.Map;
 import java.awt.event.*;
 
-
 public class ClickBiteGUI extends JFrame {
     // Store user data
     private Map<String, String> currentUser = null;
     private JComboBox<String> accountDropdown; // Declare at class level
     private OrderNow orderWindow = null;
 
-    public ClickBiteGUI() 
-    {
+    public ClickBiteGUI() {
         // Set up JFrame
         DatabaseManager.initializeDatabase();
         setTitle("ClickBite");
@@ -51,7 +49,7 @@ public class ClickBiteGUI extends JFrame {
         for (String item : navItems) {
             JButton navButton = new JButton(item);
             String itemCopy = item; // capture the current value
-        
+
             navButton.addActionListener(e -> {
                 switch (itemCopy) {
                     case "Contact Us":
@@ -68,13 +66,11 @@ public class ClickBiteGUI extends JFrame {
                         break;
                 }
             });
-        
+
             navPanel.add(navButton);
         }
-        
 
         headerPanel.add(navPanel, BorderLayout.CENTER);
-
 
         // -------------------- Account Dropdown ------------------------
         JPanel accountPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 15, 30));
@@ -167,7 +163,6 @@ public class ClickBiteGUI extends JFrame {
 
         setVisible(true);
     }
-    
 
     private void showSignUpSignInOptions() {
         String[] options = { "Customer Sign Up", "Customer Sign In", "Admin Sign Up", "Admin Sign In" };
@@ -181,7 +176,6 @@ public class ClickBiteGUI extends JFrame {
             case 3 -> showAdminSignInForm();
         }
     }
-    
 
     private void showCustomerSignUpForm() {
         JPanel panel = new JPanel(new GridLayout(10, 2));
@@ -302,31 +296,116 @@ public class ClickBiteGUI extends JFrame {
 
     private void showAdminSignUpForm() {
         JPanel panel = new JPanel(new GridLayout(8, 2));
-        JTextField[] fields = createFields(panel, "Full name", "Email Address", "Username");
-        JPasswordField password = new JPasswordField(), confirmPassword = new JPasswordField();
+        JTextField fullNameField = new JTextField();
+        JTextField emailField = new JTextField();
+        JTextField usernameField = new JTextField();
+        JPasswordField passwordField = new JPasswordField();
+        JPasswordField confirmPasswordField = new JPasswordField();
+        JCheckBox termsCheck = new JCheckBox("I agree to terms & Privacy Policy");
+
+        panel.add(new JLabel("Full Name:"));
+        panel.add(fullNameField);
+        panel.add(new JLabel("Email:"));
+        panel.add(emailField);
+        panel.add(new JLabel("Username:"));
+        panel.add(usernameField);
         panel.add(new JLabel("Password:"));
-        panel.add(password);
+        panel.add(passwordField);
         panel.add(new JLabel("Confirm Password:"));
-        panel.add(confirmPassword);
+        panel.add(confirmPasswordField);
         panel.add(new JLabel("Role:"));
-        panel.add(new JLabel("Order Manager"));
-        JOptionPane.showConfirmDialog(this, panel, "Admin Sign Up", JOptionPane.OK_CANCEL_OPTION);
+        panel.add(new JLabel("Order Manager")); // Default role
+        panel.add(termsCheck);
+        panel.add(new JLabel());
+
+        int result = JOptionPane.showConfirmDialog(this, panel, "Admin Sign Up", JOptionPane.OK_CANCEL_OPTION);
+
+        if (result == JOptionPane.OK_OPTION) {
+            if (!new String(passwordField.getPassword()).equals(new String(confirmPasswordField.getPassword()))) {
+                JOptionPane.showMessageDialog(this, "Passwords don't match", "Error", JOptionPane.ERROR_MESSAGE);
+                return;
+            }
+
+            if (!termsCheck.isSelected()) {
+                JOptionPane.showMessageDialog(this, "You must agree to the terms", "Error", JOptionPane.ERROR_MESSAGE);
+                return;
+            }
+
+            // Save admin to database
+            String sql = "INSERT INTO admins (email, fullName, username, role, password) VALUES (?, ?, ?, ?, ?)";
+            try (Connection conn = DatabaseManager.getConnection();
+                    PreparedStatement pstmt = conn.prepareStatement(sql)) {
+
+                pstmt.setString(1, emailField.getText());
+                pstmt.setString(2, fullNameField.getText());
+                pstmt.setString(3, usernameField.getText());
+                pstmt.setString(4, "Order Manager"); // Default role
+                pstmt.setString(5, new String(passwordField.getPassword()));
+                pstmt.executeUpdate();
+
+                JOptionPane.showMessageDialog(this, "Admin registration successful!", "Success",
+                        JOptionPane.INFORMATION_MESSAGE);
+            } catch (SQLException ex) {
+                JOptionPane.showMessageDialog(this, "Database error: " + ex.getMessage(),
+                        "Error", JOptionPane.ERROR_MESSAGE);
+                ex.printStackTrace();
+            }
+        }
     }
 
     private void showAdminSignInForm() {
         JPanel panel = new JPanel(new GridLayout(4, 2));
-        JTextField userOrEmail = new JTextField();
-        JPasswordField password = new JPasswordField();
+        JTextField emailField = new JTextField();
+        JPasswordField passwordField = new JPasswordField();
         JCheckBox rememberMe = new JCheckBox("Remember Me");
-        panel.add(new JLabel("Username or Email Address:"));
-        panel.add(userOrEmail);
+
+        panel.add(new JLabel("Email:"));
+        panel.add(emailField);
         panel.add(new JLabel("Password:"));
-        panel.add(password);
+        panel.add(passwordField);
         panel.add(rememberMe);
         panel.add(new JLabel());
         panel.add(new JLabel("Forgot Password? Click here to reset"));
         panel.add(new JLabel());
-        JOptionPane.showConfirmDialog(this, panel, "Admin Sign In", JOptionPane.OK_CANCEL_OPTION);
+
+        int result = JOptionPane.showConfirmDialog(this, panel, "Admin Sign In", JOptionPane.OK_CANCEL_OPTION);
+
+        if (result == JOptionPane.OK_OPTION) {
+            String email = emailField.getText().trim();
+            String password = new String(passwordField.getPassword());
+
+            String sql = "SELECT * FROM admins WHERE email = ?";
+            try (Connection conn = DatabaseManager.getConnection();
+                    PreparedStatement pstmt = conn.prepareStatement(sql)) {
+
+                pstmt.setString(1, email);
+                ResultSet rs = pstmt.executeQuery();
+
+                if (rs.next()) {
+                    String storedPassword = rs.getString("password");
+                    if (storedPassword.equals(password)) {
+                        // Load admin data
+                        currentUser = new HashMap<>();
+                        currentUser.put("email", rs.getString("email"));
+                        currentUser.put("fullName", rs.getString("fullName"));
+                        currentUser.put("username", rs.getString("username"));
+                        currentUser.put("role", rs.getString("role"));
+                        currentUser.put("password", storedPassword);
+
+                        JOptionPane.showMessageDialog(this, "Admin sign in successful!", "Success",
+                                JOptionPane.INFORMATION_MESSAGE);
+                    } else {
+                        JOptionPane.showMessageDialog(this, "Incorrect password", "Error", JOptionPane.ERROR_MESSAGE);
+                    }
+                } else {
+                    JOptionPane.showMessageDialog(this, "Admin not found", "Error", JOptionPane.ERROR_MESSAGE);
+                }
+            } catch (SQLException ex) {
+                JOptionPane.showMessageDialog(this, "Database error: " + ex.getMessage(),
+                        "Error", JOptionPane.ERROR_MESSAGE);
+                ex.printStackTrace();
+            }
+        }
     }
 
     private void showProfilePopup() {
@@ -383,33 +462,41 @@ public class ClickBiteGUI extends JFrame {
         gbc.gridx = 2;
         profilePanel.add(new JLabel(currentUser.get("username")), gbc);
 
+        if (currentUser.containsKey("role")) {
+            gbc.gridx = 1;
+            gbc.gridy = 4; // Adjust position as needed
+            profilePanel.add(new JLabel("Role:"), gbc);
+            gbc.gridx = 2;
+            profilePanel.add(new JLabel(currentUser.get("role")), gbc);
+        }
+
         gbc.gridx = 1;
-        gbc.gridy = 4;
+        gbc.gridy = 5;
         gbc.gridwidth = 2;
         JLabel addressLabel = new JLabel("Address");
         addressLabel.setFont(new Font("Arial", Font.BOLD, 16));
         profilePanel.add(addressLabel, gbc);
 
-        gbc.gridy = 5;
+        gbc.gridy = 6;
         gbc.gridwidth = 1;
         profilePanel.add(new JLabel("Street:"), gbc);
         gbc.gridx = 2;
         profilePanel.add(new JLabel(currentUser.get("street")), gbc);
 
         gbc.gridx = 1;
-        gbc.gridy = 6;
+        gbc.gridy = 7;
         profilePanel.add(new JLabel("City:"), gbc);
         gbc.gridx = 2;
         profilePanel.add(new JLabel(currentUser.get("city")), gbc);
 
         gbc.gridx = 1;
-        gbc.gridy = 7;
+        gbc.gridy = 8;
         profilePanel.add(new JLabel("Postal Code:"), gbc);
         gbc.gridx = 2;
         profilePanel.add(new JLabel(currentUser.get("postal")), gbc);
 
         gbc.gridx = 1;
-        gbc.gridy = 8;
+        gbc.gridy = 9;
         gbc.gridwidth = 2;
         gbc.fill = GridBagConstraints.NONE;
         gbc.anchor = GridBagConstraints.CENTER;
