@@ -43,7 +43,8 @@ public class ContactUsPage extends JFrame {
         JPanel contactInfoPanel = new JPanel();
         contactInfoPanel.setLayout(new BoxLayout(contactInfoPanel, BoxLayout.Y_AXIS));
         contactInfoPanel.setBorder(BorderFactory.createTitledBorder("Contact Information"));
-        contactInfoPanel.add(new JLabel("📍 Address: 1234 Mabini Street, Barangay San Antonio, Quezon City, Metro Manila, Philippines, 1100"));
+        contactInfoPanel.add(new JLabel(
+                "📍 Address: 1234 Mabini Street, Barangay San Antonio, Quezon City, Metro Manila, Philippines, 1100"));
         contactInfoPanel.add(Box.createVerticalStrut(10));
         contactInfoPanel.add(new JLabel("☎ Phone: (123) 456-7890"));
         contactInfoPanel.add(Box.createVerticalStrut(10));
@@ -60,6 +61,22 @@ public class ContactUsPage extends JFrame {
         JButton sendButton = new JButton("Send Message");
         sendButton.setBackground(new Color(255, 56, 56));
         sendButton.setForeground(Color.WHITE);
+        sendButton.addActionListener(e -> {
+            String name = nameField.getText().trim();
+            String email = emailField.getText().trim();
+            String message = messageArea.getText().trim();
+
+            if (!name.isEmpty() && !email.isEmpty() && !message.isEmpty()) {
+                DatabaseManager.saveContactMessage(name, email, message);
+                JOptionPane.showMessageDialog(this, "Message sent successfully!", "Success",
+                        JOptionPane.INFORMATION_MESSAGE);
+                nameField.setText("");
+                emailField.setText("");
+                messageArea.setText("");
+            } else {
+                JOptionPane.showMessageDialog(this, "Please fill in all fields.", "Error", JOptionPane.ERROR_MESSAGE);
+            }
+        });
 
         contactFormPanel.add(new JLabel("Name:"));
         contactFormPanel.add(nameField);

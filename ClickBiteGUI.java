@@ -59,7 +59,8 @@ public class ClickBiteGUI extends JFrame {
                         System.out.println("My Cart clicked");
                         break;
                     case "Order Now":
-                        new OrderNow();
+                        String email = currentUser != null ? currentUser.get("email") : null;
+                        new OrderNow(email);
                         break;
                     case "About Us":
                         System.out.println("About Us clicked");
@@ -113,13 +114,12 @@ public class ClickBiteGUI extends JFrame {
 
         orderNowButton.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
-                // Check if the order window is already visible
                 if (orderWindow == null || !orderWindow.isVisible()) {
-                    orderWindow = new OrderNow(); // Create new window if not visible
+                    String email = currentUser != null ? currentUser.get("email") : null;
+                    orderWindow = new OrderNow(email); // Pass user email
                     orderWindow.setVisible(true);
-                    setVisible(false); // Hide the ClickBite main window
+                    setVisible(false);
                 } else {
-                    // Optionally, bring the window to front if already visible
                     orderWindow.toFront();
                 }
             }
@@ -147,7 +147,11 @@ public class ClickBiteGUI extends JFrame {
                 showSignUpSignInOptions();
             } else if (selected.equals("Profile")) {
                 if (currentUser != null) {
-                    showProfilePopup();
+                    if (currentUser.containsKey("role") && "Order Manager".equals(currentUser.get("role"))) {
+                        showAdminPanel(); // ADMIN ONLY
+                    } else {
+                        showProfilePopup();
+                    }
                 } else {
                     JOptionPane.showMessageDialog(this, "Please sign in first", "Profile",
                             JOptionPane.INFORMATION_MESSAGE);
@@ -162,6 +166,13 @@ public class ClickBiteGUI extends JFrame {
         });
 
         setVisible(true);
+
+        int customerCount = DatabaseManager.getUserCount();
+        JLabel countLabel = new JLabel("Total Registered Customers: " + customerCount);
+        countLabel.setFont(new Font("Arial", Font.BOLD, 18));
+
+        // Add the label to the GUI
+        this.add(countLabel);
     }
 
     private void showSignUpSignInOptions() {
@@ -406,6 +417,66 @@ public class ClickBiteGUI extends JFrame {
                 ex.printStackTrace();
             }
         }
+    }
+
+    private void showAdminPanel() {
+        JFrame adminFrame = new JFrame("Admin Dashboard");
+        adminFrame.setSize(900, 600);
+        adminFrame.setLayout(new BorderLayout());
+
+        // Title
+        JLabel title = new JLabel("ClickBite Admin Panel", SwingConstants.CENTER);
+        title.setFont(new Font("Arial", Font.BOLD, 24));
+        title.setBorder(BorderFactory.createEmptyBorder(10, 0, 10, 0));
+        adminFrame.add(title, BorderLayout.NORTH);
+
+        // === LEFT PANEL: Customers + Messages ===
+        JPanel leftPanel = new JPanel(new BorderLayout());
+        leftPanel.setBorder(BorderFactory.createTitledBorder("Customer Messages"));
+
+        Map<String, String> messages = DatabaseManager.getAllContactMessages(); // You must add this method
+        DefaultListModel<String> customerListModel = new DefaultListModel<>();
+        for (String name : messages.keySet())
+            customerListModel.addElement(name);
+
+        JList<String> customerList = new JList<>(customerListModel);
+        JTextArea messageArea = new JTextArea();
+        messageArea.setLineWrap(true);
+        messageArea.setWrapStyleWord(true);
+        messageArea.setEditable(false);
+
+        customerList.addListSelectionListener(e -> {
+            String selected = customerList.getSelectedValue();
+            if (selected != null) {
+                messageArea.setText(messages.get(selected));
+            }
+        });
+
+        leftPanel.add(new JScrollPane(customerList), BorderLayout.WEST);
+        leftPanel.add(new JScrollPane(messageArea), BorderLayout.CENTER);
+
+        // === RIGHT PANEL: User Count ===
+        JPanel rightPanel = new JPanel();
+        rightPanel.setLayout(new BoxLayout(rightPanel, BoxLayout.Y_AXIS));
+        rightPanel.setBorder(BorderFactory.createTitledBorder("User Overview"));
+
+        int count = DatabaseManager.getUserCount(); // You must add this method
+        JLabel userCountLabel = new JLabel("Total Customers: " + count);
+        userCountLabel.setFont(new Font("Arial", Font.BOLD, 18));
+        userCountLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+
+        rightPanel.add(Box.createVerticalStrut(20));
+        rightPanel.add(userCountLabel);
+
+        // More widgets like cart orders can be added here
+
+        // === Combine Panels ===
+        JSplitPane splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, leftPanel, rightPanel);
+        splitPane.setDividerLocation(600);
+        adminFrame.add(splitPane, BorderLayout.CENTER);
+
+        adminFrame.setLocationRelativeTo(this);
+        adminFrame.setVisible(true);
     }
 
     private void showProfilePopup() {
