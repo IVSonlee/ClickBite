@@ -56,7 +56,7 @@ public class ClickBiteGUI extends JFrame {
                         new ContactUsPage(orderWindow); // Ensure this is a JFrame or JDialog subclass
                         break;
                     case "My Cart":
-                        System.out.println("My Cart clicked");
+                        showMyCart();
                         break;
                     case "Order Now":
                         String email = currentUser != null ? currentUser.get("email") : null;
@@ -634,6 +634,141 @@ public class ClickBiteGUI extends JFrame {
                 ex.printStackTrace();
             }
         }
+    }
+
+    private void showOrderNow() {
+        JFrame orderFrame = new JFrame("Order Now");
+        orderFrame.setSize(600, 400);
+        orderFrame.setLayout(new BorderLayout());
+
+        // Title
+        JLabel title = new JLabel("Order Now", SwingConstants.CENTER);
+        title.setFont(new Font("Arial", Font.BOLD, 24));
+        title.setBorder(BorderFactory.createEmptyBorder(10, 0, 10, 0));
+        orderFrame.add(title, BorderLayout.NORTH);
+
+        // Center Panel for Order Details
+        JPanel centerPanel = new JPanel(new GridLayout(5, 2, 10, 10));
+        centerPanel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
+
+        JTextField itemNameField = new JTextField();
+        JTextField quantityField = new JTextField();
+        JTextField priceField = new JTextField();
+
+        centerPanel.add(new JLabel("Item Name:"));
+        centerPanel.add(itemNameField);
+        centerPanel.add(new JLabel("Quantity:"));
+        centerPanel.add(quantityField);
+        centerPanel.add(new JLabel("Price:"));
+        centerPanel.add(priceField);
+
+        orderFrame.add(centerPanel, BorderLayout.CENTER);
+
+        // Checkout Button
+        JButton checkoutButton = new JButton("Checkout");
+        checkoutButton.setBackground(new Color(255, 56, 56));
+        checkoutButton.setForeground(Color.WHITE);
+        checkoutButton.setFocusPainted(false);
+
+        checkoutButton.addActionListener(e -> {
+            String itemName = itemNameField.getText();
+            int quantity;
+            double price;
+
+            try {
+                quantity = Integer.parseInt(quantityField.getText());
+                price = Double.parseDouble(priceField.getText());
+            } catch (NumberFormatException ex) {
+                JOptionPane.showMessageDialog(orderFrame, "Invalid quantity or price", "Error", JOptionPane.ERROR_MESSAGE);
+                return;
+            }
+
+            if (currentUser == null || !currentUser.containsKey("email")) {
+                JOptionPane.showMessageDialog(orderFrame, "Please sign in to place an order", "Error", JOptionPane.ERROR_MESSAGE);
+                return;
+            }
+
+            String customerEmail = currentUser.get("email");
+
+            // Save the order to the database
+            DatabaseManager.saveOrder(customerEmail, itemName, quantity, price);
+
+            JOptionPane.showMessageDialog(orderFrame, "Order placed successfully!", "Success", JOptionPane.INFORMATION_MESSAGE);
+
+            // Clear the fields
+            itemNameField.setText("");
+            quantityField.setText("");
+            priceField.setText("");
+
+            // Redirect to "My Cart"
+            orderFrame.dispose();
+            showMyCart();
+        });
+
+        JPanel buttonPanel = new JPanel();
+        buttonPanel.add(checkoutButton);
+        orderFrame.add(buttonPanel, BorderLayout.SOUTH);
+
+        orderFrame.setLocationRelativeTo(this);
+        orderFrame.setVisible(true);
+    }
+
+    private void showMyCart() {
+        JFrame cartFrame = new JFrame("My Cart");
+        cartFrame.setSize(600, 400);
+        cartFrame.setLayout(new BorderLayout());
+
+        // Title
+        JLabel title = new JLabel("My Cart", SwingConstants.CENTER);
+        title.setFont(new Font("Arial", Font.BOLD, 24));
+        title.setBorder(BorderFactory.createEmptyBorder(10, 0, 10, 0));
+        cartFrame.add(title, BorderLayout.NORTH);
+
+        // Fetch orders from the database
+        if (currentUser == null || !currentUser.containsKey("email")) {
+            JOptionPane.showMessageDialog(cartFrame, "Please sign in to view your cart", "Error", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+
+        String customerEmail = currentUser.get("email");
+        java.util.List<Map<String, Object>> orders = DatabaseManager.getOrdersByCustomerEmail(customerEmail);
+
+        DefaultListModel<String> cartListModel = new DefaultListModel<>();
+        Map<Integer, String> orderIdMap = new HashMap<>(); // Map to store order IDs for removal
+        for (Map<String, Object> order : orders) {
+            int orderId = (int) order.get("id");
+            String item = order.get("item_name") + " - Quantity: " + order.get("quantity") + " - Price: $" + order.get("price");
+            cartListModel.addElement(item);
+            orderIdMap.put(cartListModel.size() - 1, String.valueOf(orderId)); // Map index to order ID
+        }
+
+        JList<String> cartList = new JList<>(cartListModel);
+        cartFrame.add(new JScrollPane(cartList), BorderLayout.CENTER);
+
+        // Remove Button
+        JButton removeButton = new JButton("Remove Selected Item");
+        removeButton.setBackground(new Color(255, 56, 56));
+        removeButton.setForeground(Color.WHITE);
+        removeButton.setFocusPainted(false);
+
+        removeButton.addActionListener(e -> {
+            int selectedIndex = cartList.getSelectedIndex();
+            if (selectedIndex != -1) {
+                String orderId = orderIdMap.get(selectedIndex);
+                DatabaseManager.removeOrderById(orderId); // Remove the order from the database
+                cartListModel.remove(selectedIndex); // Remove the item from the list
+                JOptionPane.showMessageDialog(cartFrame, "Item removed successfully!", "Success", JOptionPane.INFORMATION_MESSAGE);
+            } else {
+                JOptionPane.showMessageDialog(cartFrame, "Please select an item to remove", "Error", JOptionPane.ERROR_MESSAGE);
+            }
+        });
+
+        JPanel buttonPanel = new JPanel();
+        buttonPanel.add(removeButton);
+        cartFrame.add(buttonPanel, BorderLayout.SOUTH);
+
+        cartFrame.setLocationRelativeTo(this);
+        cartFrame.setVisible(true);
     }
 
     private JTextField[] createFields(JPanel panel, String... labels) {

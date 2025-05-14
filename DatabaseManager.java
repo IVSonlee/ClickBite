@@ -4,6 +4,8 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -119,7 +121,8 @@ public class DatabaseManager {
 
     public static void saveOrder(String customerEmail, String itemName, int quantity, double price) {
         String sql = "INSERT INTO orders (customer_email, item_name, quantity, price) VALUES (?, ?, ?, ?)";
-        try (Connection conn = getConnection(); PreparedStatement pstmt = conn.prepareStatement(sql)) {
+        try (Connection conn = getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
             pstmt.setString(1, customerEmail);
             pstmt.setString(2, itemName);
             pstmt.setInt(3, quantity);
@@ -128,6 +131,38 @@ public class DatabaseManager {
         } catch (SQLException e) {
             e.printStackTrace();
         }
+    }
+
+    public static void removeOrderById(String orderId) {
+        String sql = "DELETE FROM orders WHERE id = ?";
+        try (Connection conn = getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setString(1, orderId);
+            pstmt.executeUpdate();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public static java.util.List<Map<String, Object>> getOrdersByCustomerEmail(String email) {
+        String sql = "SELECT id, item_name, quantity, price FROM orders WHERE customer_email = ?";
+        java.util.List<Map<String, Object>> orders = new ArrayList<>();
+        try (Connection conn = getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setString(1, email);
+            ResultSet rs = pstmt.executeQuery();
+            while (rs.next()) {
+                Map<String, Object> order = new HashMap<>();
+                order.put("id", rs.getInt("id"));
+                order.put("item_name", rs.getString("item_name"));
+                order.put("quantity", rs.getInt("quantity"));
+                order.put("price", rs.getDouble("price"));
+                orders.add(order);
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return orders;
     }
 
 }
