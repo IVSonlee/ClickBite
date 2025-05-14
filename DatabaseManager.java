@@ -1,4 +1,9 @@
-import java.sql.*;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -46,14 +51,23 @@ public class DatabaseManager {
             // Create orders table
             stmt.execute("""
                         CREATE TABLE IF NOT EXISTS orders (
-                            id INTEGER PRIMARY KEY AUTOINCREMENT,
-                            customer_email TEXT NOT NULL,
-                            item_name TEXT NOT NULL,
-                            quantity INTEGER NOT NULL,
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        customer_email TEXT NOT NULL,
+                        item_name TEXT NOT NULL,
+                        quantity INTEGER NOT NULL,
                             price REAL NOT NULL,
-                            FOREIGN KEY (customer_email) REFERENCES users(email)
+                        FOREIGN KEY (customer_email) REFERENCES users(email)
                         )
                     """);
+             // Create contact_messages table       
+            stmt.execute("""
+                        CREATE TABLE IF NOT EXISTS contact_messages (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT, 
+                        name TEXT NOT NULL, 
+                        email TEXT NOT NULL, 
+                        message TEXT NOT NULL, 
+                        timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
+                    )""");
 
         } catch (SQLException e) {
             e.printStackTrace();

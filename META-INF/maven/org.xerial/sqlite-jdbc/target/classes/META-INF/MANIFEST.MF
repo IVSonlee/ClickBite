@@ -1,0 +1,12 @@
+Manifest-Version: 1.0
+Bnd-LastModified: 1747204993761
+Build-Jdk-Spec: 24
+Bundle-Description: SQLite JDBC library
+Bundle-License: https://www.apache.org/licenses/LICENSE-2.0.txt
+Bundle-ManifestVersion: 2
+Bundle-Name: SQLite JDBC
+Bundle-SymbolicName: org.xerial.sqlite-jdbc;singleton:=true
+Bundle-Version: 3.49.1.0
+Created-By: Apache Maven Bundle Plugin 5.1.9
+Multi-Release: true
+Tool: Bnd-6.3.1.202206071316
